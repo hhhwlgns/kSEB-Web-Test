@@ -78,10 +78,6 @@ export default function InOutHistory() {
     const dateA = new Date(`${a.date}T${a.time}`);
     const dateB = new Date(`${b.date}T${b.time}`);
     return dateB.getTime() - dateA.getTime();
-  });.sort((a, b) => {
-    const dateA = new Date(`${a.date}T${a.time}`);
-    const dateB = new Date(`${b.date}T${b.time}`);
-    return dateB.getTime() - dateA.getTime();
   });
 
   const totalPages = Math.ceil(filteredHistory.length / itemsPerPage)

@@ -10,6 +10,11 @@ import Link from "next/link"
 import { useNotifications } from "@/hooks/use-notifications"
 import { cn } from "@/components/utils" // cn 유틸리티를 가져옵니다.
 
+interface DraggableData {
+  x: number;
+  y: number;
+}
+
 export default function NotificationPopover() {
   const { notifications, unreadCount, markAsRead, deleteNotification } = useNotifications()
   const [isOpen, setIsOpen] = useState(false)
@@ -31,11 +36,13 @@ export default function NotificationPopover() {
     setHasLoadedPosition(true);
   }, [])
 
-  const handleDrag = (e: any, data: { x: number; y: number }) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleDrag = (e: any, data: DraggableData) => {
     setPosition({ x: data.x, y: data.y });
   };
 
-  const handleStop = (e: any, data: { x: number; y: number }) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleStop = (e: any, data: DraggableData) => {
     localStorage.setItem("notification-window-position", JSON.stringify({ x: data.x, y: data.y }))
   }
 

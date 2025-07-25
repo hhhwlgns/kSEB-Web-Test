@@ -17,6 +17,9 @@ import { Line, XAxis, YAxis, CartesianGrid, LineChart, Pie, PieChart, Cell, Sect
 import { Package, CheckCircle, AlertTriangle, XCircle, Archive, Truck, Clock, CalendarCheck, TrendingUp, TrendingDown, Percent, CalendarIcon, Bot, Activity, AlertCircle, Building, DollarSign, ShoppingCart } from 'lucide-react';
 import { CustomPagination } from '@/components/ui/custom-pagination';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const AnyPie = Pie as any;
+
 // Helper function to format numbers with commas
 const formatNumber = (num: number) => num.toLocaleString();
 
@@ -41,6 +44,22 @@ type MetricItem = {
     icon: React.ElementType;
     items: (typeof mockInventoryData[0] | InOutRecord)[];
 };
+
+interface ActiveShapeProps {
+  cx: number;
+  cy: number;
+  midAngle: number;
+  innerRadius: number;
+  outerRadius: number;
+  startAngle: number;
+  endAngle: number;
+  fill: string;
+  payload: {
+    name: string;
+  };
+  percent: number;
+  value: number;
+}
 
 export function UnifiedDashboard() {
   const [isCollapsed, setIsCollapsed] = React.useState(false)
@@ -73,11 +92,11 @@ export function UnifiedDashboard() {
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-  const onPieEnter = (_: any, index: number) => {
+  const onPieEnter = (_: unknown, index: number) => {
     setActivePieIndex(index);
   };
 
-  const renderActiveShape = (props: any) => {
+  const renderActiveShape = (props: ActiveShapeProps) => {
     const RADIAN = Math.PI / 180;
     const { cx, cy, midAngle, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percent, value } = props;
     const sin = Math.sin(-RADIAN * midAngle);
@@ -362,7 +381,7 @@ export function UnifiedDashboard() {
   const renderDetailTable = (
     activeDetail: string | null, 
     metrics: MetricItem[], 
-    headers: { key: string; label: string; className?: string; render?: (item: any) => React.ReactNode }[], 
+    headers: { key: string; label: string; className?: string; render?: (item: InOutRecord | typeof mockInventoryData[0]) => React.ReactNode }[], 
     titlePrefix: string,
     currentPage?: number,
     setCurrentPage?: (page: number) => void
@@ -450,15 +469,15 @@ export function UnifiedDashboard() {
               ))}
             </div>
             <div className="mt-4">{renderDetailTable(activeWorkDetail, workStatusMetrics as MetricItem[], [
-                { key: 'type', label: '유형', className: 'w-[10%] text-center', render: (item) => item.type === 'inbound' ? '입고' : '출고' },
+                { key: 'type', label: '유형', className: 'w-[10%] text-center', render: (item) => 'type' in item && item.type === 'inbound' ? '입고' : '출고' },
                 { key: 'productName', label: '상품명', className: 'w-[25%] text-left truncate' },
                 { key: 'quantity', label: '수량', className: 'w-[30%] text-center' },
                 { key: 'company', label: '거래처', className: 'w-[15%] text-left' },
                 { key: 'status', label: '상태', className: 'w-[15%] text-center' },
                 { key: 'date', label: '일자', className: 'w-[20%] text-center', render: (item) => (
                     <>
-                        <div>{item.date}</div>
-                        <div className="text-xs text-gray-500">{item.time}</div>
+                        <div>{'date' in item && item.date}</div>
+                        <div className="text-xs text-gray-500">{'time' in item && item.time}</div>
                     </>
                 )},
             ], '작업 현황', workCurrentPage, setWorkCurrentPage)}</div>
@@ -490,7 +509,17 @@ export function UnifiedDashboard() {
                     </div>
                 </div>
                 <ChartContainer config={{ inbound: { label: "입고", color: "hsl(var(--chart-2))" }, outbound: { label: "출고", color: "hsl(var(--chart-1))" }, }} className="h-[300px] w-full">
-                    <LineChart data={inOutAnalysis.chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}><CartesianGrid vertical={false} /><XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={xAxisTickFormatter} /><YAxis /><ChartTooltip content={ChartTooltipContent} /><ChartLegend content={ChartLegendContent} /><Line type="monotone" dataKey="inbound" stroke="var(--color-inbound)" strokeWidth={2} dot={false} name="입고" /><Line type="monotone" dataKey="outbound" stroke="var(--color-outbound)" strokeWidth={2} dot={false} name="출고" /></LineChart>
+                    <LineChart data={inOutAnalysis.chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                        <CartesianGrid vertical={false} />
+                        <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={xAxisTickFormatter} />
+                        <YAxis />
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                        <ChartTooltip content={ChartTooltipContent as any} />
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                        <ChartLegend content={ChartLegendContent as any} />
+                        <Line type="monotone" dataKey="inbound" stroke="var(--color-inbound)" strokeWidth={2} dot={false} name="입고" />
+                        <Line type="monotone" dataKey="outbound" stroke="var(--color-outbound)" strokeWidth={2} dot={false} name="출고" />
+                    </LineChart>
                 </ChartContainer>
             </AccordionContent>
         </AccordionItem>
@@ -511,7 +540,15 @@ export function UnifiedDashboard() {
                             idle: { label: '대기 중', color: 'hsl(var(--chart-3))' },
                             error: { label: '오류', color: 'hsl(var(--chart-4))' }
                         }} className="h-full w-full">
-                            <PieChart><ChartTooltip content={ChartTooltipContent} /><Pie data={amrAnalysis.chartData} dataKey="value" nameKey="displayName" innerRadius={60} outerRadius={80} paddingAngle={5}>{amrAnalysis.chartData.map((entry) => (<Cell key={`cell-${entry.name}`} fill={entry.fill} />))}</Pie><ChartLegend content={ChartLegendContent} /></PieChart>
+                            <PieChart>
+                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                <ChartTooltip content={ChartTooltipContent as any} />
+                                <Pie data={amrAnalysis.chartData} dataKey="value" nameKey="displayName" innerRadius={60} outerRadius={80} paddingAngle={5}>
+                                    {amrAnalysis.chartData.map((entry) => (<Cell key={`cell-${entry.name}`} fill={entry.fill} />))}
+                                </Pie>
+                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                <ChartLegend content={ChartLegendContent as any} />
+                            </PieChart>
                         </ChartContainer>
                     </div>
                 </div>
@@ -554,7 +591,18 @@ export function UnifiedDashboard() {
                       </CardHeader>
                       <CardContent>
                         <ChartContainer config={{ amount: { label: "판매 금액", color: "hsl(var(--chart-1))" }, count: { label: "판매 건수", color: "hsl(var(--chart-2))" } }} className="h-[300px] w-full">
-                            <LineChart data={salesAnalysis.salesTrend} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="date" tickFormatter={salesXAxisTickFormatter} /><YAxis yAxisId="left" label={{ value: '금액(만 원)', angle: -90, position: 'insideLeft' }} /><YAxis yAxisId="right" orientation="right" label={{ value: '건수', angle: -90, position: 'insideRight' }} allowDecimals={false} /><ChartTooltip content={ChartTooltipContent} /><ChartLegend content={ChartLegendContent} /><Line yAxisId="left" type="monotone" dataKey="amount" stroke="var(--color-amount)" name="판매 금액" /><Line yAxisId="right" type="monotone" dataKey="count" stroke="var(--color-count)" name="판매 건수" /></LineChart>
+                            <LineChart data={salesAnalysis.salesTrend} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="date" tickFormatter={salesXAxisTickFormatter} />
+                                <YAxis yAxisId="left" label={{ value: '금액(만 원)', angle: -90, position: 'insideLeft' }} />
+                                <YAxis yAxisId="right" orientation="right" label={{ value: '건수', angle: -90, position: 'insideRight' }} allowDecimals={false} />
+                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                <ChartTooltip content={ChartTooltipContent as any} />
+                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                <ChartLegend content={ChartLegendContent as any} />
+                                <Line yAxisId="left" type="monotone" dataKey="amount" stroke="var(--color-amount)" name="판매 금액" />
+                                <Line yAxisId="right" type="monotone" dataKey="count" stroke="var(--color-count)" name="판매 건수" />
+                            </LineChart>
                         </ChartContainer>
                       </CardContent>
                     </Card>
@@ -567,9 +615,10 @@ export function UnifiedDashboard() {
                       <CardContent>
                         <ChartContainer config={{ count: { label: "납품 건수" } }} className="h-[300px] w-full">
                             <PieChart>
-                                <Pie
+                                <AnyPie
                                     activeIndex={activePieIndex}
-                                    activeShape={renderActiveShape}
+                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                    activeShape={renderActiveShape as any}
                                     data={salesAnalysis.companyPieChartData}
                                     cx="50%"
                                     cy="50%"
@@ -581,7 +630,7 @@ export function UnifiedDashboard() {
                                     {salesAnalysis.companyPieChartData.map((entry, index) => (
                                         <Cell key={`cell-${index}`} fill={`hsl(var(--chart-${index + 1}))`} />
                                     ))}
-                                </Pie>
+                                </AnyPie>
                             </PieChart>
                         </ChartContainer>
                       </CardContent>

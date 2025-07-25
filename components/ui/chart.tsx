@@ -109,8 +109,9 @@ const ChartTooltipContent = React.forwardRef<
     labelKey?: string
   }
 >(
-  (
-    {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (props: any, ref) => {
+    const {
       active,
       payload,
       className,
@@ -123,9 +124,7 @@ const ChartTooltipContent = React.forwardRef<
       color,
       nameKey,
       labelKey,
-    },
-    ref
-  ) => {
+    } = props
     const { config } = useChart()
 
     const tooltipLabel = React.useMemo(() => {
@@ -172,7 +171,8 @@ const ChartTooltipContent = React.forwardRef<
       >
         {!nestLabel ? tooltipLabel : null}
         <div className="grid gap-1.5">
-          {payload.map((item, index) => {
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+          {payload.map((item: any, index: number) => {
             const key = `${nameKey || item.name || item.dataKey || "value"}`
             const itemConfig = getPayloadConfigFromPayload(config, item, key)
             const indicatorColor = color || item.color
@@ -248,7 +248,8 @@ const ChartLegend = RechartsPrimitive.Legend
 const ChartLegendContent = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div"> & {
-    payload?: TooltipProps<string | number, string | number>["payload"];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    payload?: any[]
     hideIcon?: boolean
     nameKey?: string
   }
